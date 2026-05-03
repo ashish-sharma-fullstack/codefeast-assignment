@@ -3,7 +3,7 @@
 const { validateCreateEmployee, validateUpdateEmployee, validateId, validateCountry } = require('../utils/validate');
 const AppError           = require('../utils/AppError');
 const employeeRepository = require('../repositories/employee.repository');
-const { calculateSalary } = require('../utils/taxRules');
+const { calculateSalary } = require('./salary.service');
 
 const create = async (data) => {
   validateCreateEmployee(data);
