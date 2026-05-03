@@ -2,9 +2,11 @@
 
 const prisma = require('../utils/prisma');
 
+// ─── Salary metrics ───────────────────────────────────────────────────────────
+
 /**
- * Returns Prisma's built-in aggregate over all employees.
- * Prisma calculates _count, _sum, _avg, _min, _max server-side in one query.
+ * Single-query aggregate over ALL employees.
+ * Prisma computes _count, _sum, _avg, _min, _max at the DB level.
  */
 const getSalaryAggregates = () =>
   prisma.employee.aggregate({
@@ -15,15 +17,35 @@ const getSalaryAggregates = () =>
     _max:   { salary: true },
   });
 
-/**
- * Returns all employees whose department contains the given title.
- * SQLite's LIKE is case-insensitive for ASCII letters, but to be safe
- * and driver-agnostic we filter the full result set in JS.
- */
-const getEmployeesByDepartment = async (title) => {
-  const lower = title.toLowerCase();
-  const all   = await prisma.employee.findMany();
-  return all.filter((e) => e.department.toLowerCase().includes(lower));
-};
+// ─── Job metrics ──────────────────────────────────────────────────────────────
 
-module.exports = { getSalaryAggregates, getEmployeesByDepartment };
+/**
+ * DB-level aggregate filtered by department.
+ * SQLite's LIKE (used by Prisma `contains`) is case-insensitive for ASCII.
+ *
+ * @param {string} title - partial department name
+ */
+const getJobAggregates = (title) =>
+  prisma.employee.aggregate({
+    where:  { department: { contains: title } },
+    _count: { _all: true },
+    _sum:   { salary: true },
+    _avg:   { salary: true },
+    _min:   { salary: true },
+    _max:   { salary: true },
+  });
+
+/**
+ * Returns matching employees with only the fields needed by the API.
+ * DB-level `contains` replaces the previous full-table-scan + JS filter.
+ *
+ * @param {string} title - partial department name
+ */
+const getEmployeesByDepartment = (title) =>
+  prisma.employee.findMany({
+    where:   { department: { contains: title } },
+    select:  { id: true, name: true, department: true, salary: true },
+    orderBy: { name: 'asc' },
+  });
+
+module.exports = { getSalaryAggregates, getJobAggregates, getEmployeesByDepartment };

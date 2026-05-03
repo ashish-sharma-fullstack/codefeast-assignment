@@ -65,4 +65,21 @@ const validateCountry = (country) => {
     'country query parameter is required');
 };
 
-module.exports = { validateCreateEmployee, validateUpdateEmployee, validateId, validateCountry };
+/**
+ * Validates the ?title query parameter.
+ *
+ * @param {unknown} title - raw value from req.query.title
+ * @throws {AppError(400)} when absent or blank
+ */
+const validateTitle = (title) => {
+  assert(!!title && typeof title === 'string' && title.trim().length > 0,
+    'title query parameter is required');
+};
+
+module.exports = {
+  validateCreateEmployee,
+  validateUpdateEmployee,
+  validateId,
+  validateCountry,
+  validateTitle,
+};

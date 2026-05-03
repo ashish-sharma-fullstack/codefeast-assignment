@@ -1,21 +1,24 @@
 'use strict';
 
-const { validateCountry } = require('../utils/validate');
-const AppError            = require('../utils/AppError');
-const { getTaxRate }      = require('./salary.service');
-const metricsRepository   = require('../repositories/metrics.repository');
+const { validateCountry, validateTitle } = require('../utils/validate');
+const { getTaxRate }                     = require('./salary.service');
+const metricsRepository                  = require('../repositories/metrics.repository');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/** Rounds to 2 decimal places — prevents floating-point artefacts */
 const round2 = (n) => Math.round(n * 100) / 100;
+
+/** Safely reads a nullable Prisma aggregate value; returns 0 when null */
+const safe = (v) => v ?? 0;
 
 // ─── Salary metrics ───────────────────────────────────────────────────────────
 
 /**
- * Aggregates gross and net salary statistics across all employees
+ * Aggregates gross and net salary statistics across all employees,
  * applying the specified country's flat tax rate.
  *
- * @param {string} country - ISO 3166-1 alpha-2 country code
+ * @param {string} country - ISO 3166-1 alpha-2 country code (case-insensitive)
  * @returns {object} salary metrics breakdown
  */
 const getSalaryMetrics = async (country) => {
@@ -25,11 +28,11 @@ const getSalaryMetrics = async (country) => {
   const taxRate    = getTaxRate(normalised);
   const agg        = await metricsRepository.getSalaryAggregates();
 
-  const count      = agg._count._all   ?? 0;
-  const totalGross = agg._sum.salary    ?? 0;
-  const avgGross   = agg._avg.salary    ?? 0;
-  const minGross   = agg._min.salary    ?? 0;
-  const maxGross   = agg._max.salary    ?? 0;
+  const count      = safe(agg._count._all);
+  const totalGross = safe(agg._sum.salary);
+  const avgGross   = count > 0 ? safe(agg._avg.salary) : 0;  // _avg is null when count=0
+  const minGross   = safe(agg._min.salary);
+  const maxGross   = safe(agg._max.salary);
 
   return {
     country:            normalised,
@@ -37,8 +40,8 @@ const getSalaryMetrics = async (country) => {
     totalEmployees:     count,
     totalGrossSalary:   totalGross,
     totalNetSalary:     round2(totalGross * (1 - taxRate)),
-    averageGrossSalary: count > 0 ? round2(avgGross) : 0,
-    averageNetSalary:   count > 0 ? round2(avgGross  * (1 - taxRate)) : 0,
+    averageGrossSalary: round2(avgGross),
+    averageNetSalary:   round2(avgGross  * (1 - taxRate)),
     minGrossSalary:     minGross,
     maxGrossSalary:     maxGross,
   };
@@ -48,42 +51,31 @@ const getSalaryMetrics = async (country) => {
 
 /**
  * Returns salary stats for employees whose department contains `title`.
+ * Uses DB-level aggregation and filtering — no full table scans, no JS math.
  *
  * @param {string} title - partial department name (case-insensitive)
  * @returns {object} job metrics breakdown
  */
 const getJobMetrics = async (title) => {
-  if (!title || !title.trim()) {
-    throw new AppError('title query parameter is required', 400);
-  }
+  validateTitle(title);
 
-  const employees = await metricsRepository.getEmployeesByDepartment(title);
+  const trimmed = title.trim();
 
-  if (employees.length === 0) {
-    return {
-      title:          title.trim(),
-      totalEmployees: 0,
-      averageSalary:  0,
-      minSalary:      0,
-      maxSalary:      0,
-      employees:      [],
-    };
-  }
+  // Fire both queries in parallel — they are independent
+  const [agg, employees] = await Promise.all([
+    metricsRepository.getJobAggregates(trimmed),
+    metricsRepository.getEmployeesByDepartment(trimmed),
+  ]);
 
-  const salaries    = employees.map((e) => e.salary);
-  const total       = salaries.reduce((sum, s) => sum + s, 0);
-  const avgSalary   = round2(total / employees.length);
-  const minSalary   = Math.min(...salaries);
-  const maxSalary   = Math.max(...salaries);
+  const count = safe(agg._count._all);
 
   return {
-    title:          title.trim(),
-    totalEmployees: employees.length,
-    averageSalary:  avgSalary,
-    minSalary,
-    maxSalary,
-    employees:      employees.map(({ id, name, department, salary }) =>
-                      ({ id, name, department, salary })),
+    title:          trimmed,
+    totalEmployees: count,
+    averageSalary:  count > 0 ? round2(safe(agg._avg.salary)) : 0,
+    minSalary:      safe(agg._min.salary),
+    maxSalary:      safe(agg._max.salary),
+    employees,
   };
 };
 
