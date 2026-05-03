@@ -24,13 +24,33 @@ const notFound = (req, _res, next) => {
  */
 // eslint-disable-next-line no-unused-vars
 const errorHandler = (err, _req, res, _next) => {
-  const isOperational = err instanceof AppError;
+  // ── Prisma: unique constraint violation (P2002) → 409 Conflict ──────────────
+  if (err.code === 'P2002') {
+    // Prisma 7 + better-sqlite3 adapter: field is in driverAdapterError
+    const adapterFields = err.meta?.driverAdapterError?.cause?.constraint?.fields;
+    // PostgreSQL / other adapters: field is in meta.target
+    const targetFields  = err.meta?.target;
 
-  const statusCode = isOperational ? err.statusCode : 500;
-  const message    = isOperational ? err.message    : 'Internal Server Error';
+    const field =
+      (Array.isArray(adapterFields) && adapterFields[0]) ||
+      (Array.isArray(targetFields)  && targetFields[0])  ||
+      (typeof targetFields === 'string'
+        ? targetFields.split('_').slice(1, -1).join('_') || targetFields
+        : null) ||
+      'field';
+
+    return res.status(409).json({
+      success: false,
+      message: `${field} already exists`,
+    });
+  }
+
+  // ── AppError (operational) vs unexpected programmer error ────────────────────
+  const isOperational = err instanceof AppError;
+  const statusCode    = isOperational ? err.statusCode : 500;
+  const message       = isOperational ? err.message    : 'Internal Server Error';
 
   if (!isOperational) {
-    // Unexpected errors always get logged server-side
     console.error('[Unhandled Error]', err);
   }
 

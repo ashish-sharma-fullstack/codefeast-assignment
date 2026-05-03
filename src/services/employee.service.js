@@ -7,7 +7,9 @@ const { calculateSalary } = require('./salary.service');
 
 const create = async (data) => {
   validateCreateEmployee(data);
-  return employeeRepository.create(data);
+  // Only pass fields that exist in the Prisma schema — ignore unknown keys
+  const { name, email, department, salary } = data;
+  return employeeRepository.create({ name, email, department, salary });
 };
 
 const findAll = () => employeeRepository.findAll();

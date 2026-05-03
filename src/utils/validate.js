@@ -21,8 +21,8 @@ const assert = (condition, message) => {
  * @throws {AppError} on the first failing rule
  */
 const validateCreateEmployee = ({ name, email, salary }) => {
-  assert(!!name,                                        'name is required');
-  assert(!!email,                                       'email is required');
+  assert(typeof name  === 'string' && !!name.trim(),    'name is required');
+  assert(typeof email === 'string' && !!email.trim(),   'email is required');
   assert(salary !== undefined && salary !== null,       'salary is required');
   assert(typeof salary === 'number' && salary > 0,      'salary must be a positive number');
 };
