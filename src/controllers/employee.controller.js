@@ -34,7 +34,7 @@ const update = async (req, res, next) => {
 const remove = async (req, res, next) => {
   try {
     await employeeService.remove(req.params.id);
-    res.status(200).json({ success: true });
+    res.status(200).json({ success: true, message: 'Employee deleted successfully' });
   } catch (err) { next(err); }
 };
 

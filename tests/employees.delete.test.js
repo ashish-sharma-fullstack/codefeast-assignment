@@ -32,7 +32,7 @@ describe('DELETE /api/v1/employees/:id', () => {
 
   // ── Successful deletion ─────────────────────────────────────────────────────
   describe('successful deletion', () => {
-    it('should return 200 with success:true', async () => {
+    it('should return 200 with success:true and a confirmation message', async () => {
       const existing = await seed();
 
       const res = await request(app)
@@ -41,6 +41,7 @@ describe('DELETE /api/v1/employees/:id', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
+      expect(res.body.message).toMatch(/deleted/i);
     });
 
     it('should remove the record — a subsequent GET returns 404', async () => {
