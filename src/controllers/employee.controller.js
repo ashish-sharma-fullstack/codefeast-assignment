@@ -31,4 +31,11 @@ const update = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { create, findAll, findById, update };
+const remove = async (req, res, next) => {
+  try {
+    await employeeService.remove(req.params.id);
+    res.status(200).json({ success: true });
+  } catch (err) { next(err); }
+};
+
+module.exports = { create, findAll, findById, update, remove };

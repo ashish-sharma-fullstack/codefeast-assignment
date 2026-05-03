@@ -6,5 +6,6 @@ const create   = (data)     => prisma.employee.create({ data });
 const findAll  = ()         => prisma.employee.findMany({ orderBy: { createdAt: 'desc' } });
 const findById = (id)       => prisma.employee.findUnique({ where: { id } });
 const update   = (id, data) => prisma.employee.update({ where: { id }, data });
+const remove   = (id)       => prisma.employee.delete({ where: { id } });
 
-module.exports = { create, findAll, findById, update };
+module.exports = { create, findAll, findById, update, remove };

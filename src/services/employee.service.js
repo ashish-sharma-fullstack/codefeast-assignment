@@ -27,4 +27,12 @@ const update = async (rawId, data) => {
   return employeeRepository.update(id, data);
 };
 
-module.exports = { create, findAll, findById, update };
+const remove = async (rawId) => {
+  validateId(rawId);
+  const id = Number(rawId);
+  const existing = await employeeRepository.findById(id);
+  if (!existing) throw new AppError('Employee not found', 404);
+  await employeeRepository.remove(id);
+};
+
+module.exports = { create, findAll, findById, update, remove };
