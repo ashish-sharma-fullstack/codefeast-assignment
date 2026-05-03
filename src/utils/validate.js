@@ -36,10 +36,10 @@ const validateCreateEmployee = ({ name, email, salary }) => {
  * @throws {AppError} on the first failing rule
  */
 const validateUpdateEmployee = (data) => {
-  if ('name'   in data) assert(!!data.name,                                   'name cannot be empty');
-  if ('email'  in data) assert(!!data.email,                                  'email cannot be empty');
+  if ('name'   in data) assert(typeof data.name  === 'string' && !!data.name.trim(),  'name cannot be empty');
+  if ('email'  in data) assert(typeof data.email === 'string' && !!data.email.trim(), 'email cannot be empty');
   if ('salary' in data) assert(typeof data.salary === 'number' && data.salary > 0,
-                                                                              'salary must be a positive number');
+                                                                            'salary must be a positive number');
 };
 
 /**

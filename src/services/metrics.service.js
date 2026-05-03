@@ -1,16 +1,9 @@
 'use strict';
 
 const { validateCountry, validateTitle } = require('../utils/validate');
+const { round2, nullToZero }             = require('../utils/math');
 const { getTaxRate }                     = require('./salary.service');
 const metricsRepository                  = require('../repositories/metrics.repository');
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Rounds to 2 decimal places — prevents floating-point artefacts */
-const round2 = (n) => Math.round(n * 100) / 100;
-
-/** Safely reads a nullable Prisma aggregate value; returns 0 when null */
-const safe = (v) => v ?? 0;
 
 // ─── Salary metrics ───────────────────────────────────────────────────────────
 
@@ -28,11 +21,11 @@ const getSalaryMetrics = async (country) => {
   const taxRate    = getTaxRate(normalised);
   const agg        = await metricsRepository.getSalaryAggregates();
 
-  const count      = safe(agg._count._all);
-  const totalGross = safe(agg._sum.salary);
-  const avgGross   = count > 0 ? safe(agg._avg.salary) : 0;  // _avg is null when count=0
-  const minGross   = safe(agg._min.salary);
-  const maxGross   = safe(agg._max.salary);
+  const count      = nullToZero(agg._count._all);
+  const totalGross = nullToZero(agg._sum.salary);
+  const avgGross   = count > 0 ? nullToZero(agg._avg.salary) : 0;  // _avg is null when count=0
+  const minGross   = nullToZero(agg._min.salary);
+  const maxGross   = nullToZero(agg._max.salary);
 
   return {
     country:            normalised,
@@ -67,14 +60,14 @@ const getJobMetrics = async (title) => {
     metricsRepository.getEmployeesByDepartment(trimmed),
   ]);
 
-  const count = safe(agg._count._all);
+  const count = nullToZero(agg._count._all);
 
   return {
     title:          trimmed,
     totalEmployees: count,
-    averageSalary:  count > 0 ? round2(safe(agg._avg.salary)) : 0,
-    minSalary:      safe(agg._min.salary),
-    maxSalary:      safe(agg._max.salary),
+    averageSalary:  count > 0 ? round2(nullToZero(agg._avg.salary)) : 0,
+    minSalary:      nullToZero(agg._min.salary),
+    maxSalary:      nullToZero(agg._max.salary),
     employees,
   };
 };
