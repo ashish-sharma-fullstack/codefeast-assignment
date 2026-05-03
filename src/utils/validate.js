@@ -28,8 +28,23 @@ const validateCreateEmployee = ({ name, email, salary }) => {
 };
 
 /**
+ * Validates the payload for updating an employee.
+ * Only fields that are present in the payload are checked —
+ * omitted fields are left unchanged in the DB.
+ *
+ * @param {Partial<{ name, email, salary }>} data
+ * @throws {AppError} on the first failing rule
+ */
+const validateUpdateEmployee = (data) => {
+  if ('name'   in data) assert(!!data.name,                                   'name cannot be empty');
+  if ('email'  in data) assert(!!data.email,                                  'email cannot be empty');
+  if ('salary' in data) assert(typeof data.salary === 'number' && data.salary > 0,
+                                                                              'salary must be a positive number');
+};
+
+/**
  * Validates a route :id parameter.
- * Accepts only integers > 0.
+ * Accepts only positive integers.
  *
  * @param {unknown} raw - The raw string value from req.params.id
  * @throws {AppError(400)} if not a positive integer
@@ -39,4 +54,4 @@ const validateId = (raw) => {
   assert(Number.isInteger(id) && id > 0, 'id must be a positive integer');
 };
 
-module.exports = { validateCreateEmployee, validateId };
+module.exports = { validateCreateEmployee, validateUpdateEmployee, validateId };

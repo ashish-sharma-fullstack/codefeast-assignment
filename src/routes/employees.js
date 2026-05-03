@@ -8,5 +8,6 @@ const router = Router();
 router.get('/',    employeeController.findAll);
 router.get('/:id', employeeController.findById);
 router.post('/',   employeeController.create);
+router.put('/:id', employeeController.update);
 
 module.exports = router;
