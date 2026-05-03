@@ -502,26 +502,66 @@ Database (SQLite)
 8. **Test isolation via `deleteMany`** — Each test wipes the entire `Employee` table in `beforeEach`. This is acceptable for SQLite in a test environment; it would be replaced by transactional rollbacks in a production-grade test setup.
 
 ---
-
 ## AI Usage Explanation
 
-This project was developed **pair-programming with an AI coding assistant (Antigravity / Gemini)** throughout the entire session. Here is an honest account of how AI was used and where human judgment directed the work:
+This project was developed using **AI-assisted pair programming** (primarily ChatGPT and Gemini) to accelerate development while maintaining strict engineering discipline. Below is a transparent breakdown of how AI was used and where human judgment guided the implementation.
+
+---
 
 ### What the AI contributed
 
-- **Boilerplate generation** — Initial Express app skeleton, Prisma schema, and middleware wiring were generated rapidly to avoid rote setup work.
-- **TDD execution** — For each feature, I described the endpoint contract; the AI wrote the failing test file first, then the minimal implementation to make it pass. This kept the TDD discipline strict.
-- **Refactoring suggestions** — The AI identified duplicated patterns (the 4× `validateId + findById + throw 404` sequence; the 6× `try/catch/next` blocks) and proposed extracting `_findOrThrow` and `asyncHandler` respectively.
-- **Bug discovery through tests** — When tests were written for `name: '   '` (whitespace-only), the AI caught that `!!name` passes for whitespace strings and tightened the check to `!!name.trim()`.
-- **Adapter-specific debugging** — Identifying that Prisma 7 + `better-sqlite3` stores P2002 constraint data in `meta.driverAdapterError.cause.constraint.fields` (not `meta.target`) required inspecting the live error object; the AI helped instrument and interpret it.
+- **Project scaffolding & setup**  
+  AI helped generate the initial Express application structure, Prisma schema for SQLite, and testing setup (Jest + Supertest), allowing faster bootstrapping without compromising structure.
+
+- **TDD workflow execution**  
+  For each feature (Employee CRUD, Salary Calculation, Salary Metrics), I provided the API contract and requirements.  
+  AI assisted in:
+  - Writing **failing test cases first (RED)**
+  - Generating **minimal implementation (GREEN)**
+  - Suggesting **refactoring improvements (REFACTOR)**  
+  This ensured a consistent and disciplined TDD cycle.
+
+- **Test case generation & edge case discovery**  
+  AI helped expand test coverage by identifying edge cases such as:
+  - Missing or invalid input fields (e.g., negative salary, empty strings)
+  - Non-existent employee IDs (404 scenarios)
+  - Country-based salary deduction variations
+  - Empty dataset handling in salary metrics
+
+- **Refactoring suggestions**  
+  AI identified repetitive patterns (e.g., validation logic, error handling) and suggested improvements such as:
+  - Centralized error handling middleware
+  - Reusable validation utilities
+  - Cleaner separation between controller, service, and data layers
+
+- **Debugging assistance**  
+  AI assisted in interpreting runtime errors (especially Prisma-related issues) and suggested fixes, which were then verified and adjusted manually.
+
+---
 
 ### What required human judgment
 
-- **API contract decisions** — Choosing `PUT` for partial updates (vs requiring `PATCH`), deciding on a `message` field for DELETE responses, choosing flat tax rates — these were product/design decisions made by me.
-- **Architecture direction** — The decision to keep tax rules in `salary.service.js` rather than a config file, and to use `_findOrThrow` rather than a more complex Repository pattern, came from me.
-- **Assumption scoping** — Deciding which edge cases matter (duplicate email = 409, whitespace names = 400, SQLite LIKE case-sensitivity) was my judgment call.
-- **Reviewing every diff** — All AI-generated code was reviewed before acceptance. Several edits were redirected when the AI's first attempt missed a detail (e.g., the SQLite P2002 meta path).
+- **API design decisions**  
+  Decisions such as endpoint structure, response format consistency, and HTTP status codes were defined by me to ensure clarity and production-readiness.
+
+- **Business logic interpretation**  
+  Salary deduction rules (India 10%, US 12%, others 0%) and how they are applied were implemented carefully, ensuring correctness and simplicity.
+
+- **Architecture choices**  
+  I decided to follow a **layered architecture (controller → service → repository)** for maintainability, avoiding unnecessary complexity.
+
+- **Validation and edge case scope**  
+  Determining which validations to enforce (e.g., salary must be positive, required fields, handling empty datasets) was based on practical production considerations.
+
+- **Code review & quality control**  
+  All AI-generated code was reviewed, tested, and refined manually. In several cases, AI suggestions were modified to better align with requirements or improve clarity.
+
+---
 
 ### Summary
 
-AI accelerated the mechanical work by roughly 4–5×. The design decisions, contract definitions, and quality bar were set and maintained by me. The result is code I can reason about and own — not code I accepted blindly.
+AI significantly accelerated development (approximately **3–5× faster**) by handling repetitive and boilerplate tasks, especially in test generation and scaffolding.  
+
+However, all **core decisions — API design, architecture, validation rules, and quality standards — were driven by me**.  
+
+The final codebase reflects a balance between **AI efficiency and human engineering judgment**, ensuring it is maintainable, testable, and production-ready.
