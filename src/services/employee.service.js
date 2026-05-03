@@ -1,18 +1,21 @@
 'use strict';
 
-const { validateCreateEmployee } = require('../utils/validate');
-const employeeRepository       = require('../repositories/employee.repository');
+const { validateCreateEmployee, validateId } = require('../utils/validate');
+const AppError           = require('../utils/AppError');
+const employeeRepository = require('../repositories/employee.repository');
 
-/**
- * Creates a new employee after validating the input.
- *
- * @param {{ name: string, email: string, salary: number, department?: string }} data
- * @returns {Promise<Employee>}
- * @throws {AppError} on validation failure
- */
 const create = async (data) => {
   validateCreateEmployee(data);
   return employeeRepository.create(data);
 };
 
-module.exports = { create };
+const findAll = () => employeeRepository.findAll();
+
+const findById = async (rawId) => {
+  validateId(rawId);                                     // throws AppError(400) on bad id
+  const employee = await employeeRepository.findById(Number(rawId));
+  if (!employee) throw new AppError('Employee not found', 404);
+  return employee;
+};
+
+module.exports = { create, findAll, findById };

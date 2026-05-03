@@ -27,4 +27,16 @@ const validateCreateEmployee = ({ name, email, salary }) => {
   assert(typeof salary === 'number' && salary > 0,      'salary must be a positive number');
 };
 
-module.exports = { validateCreateEmployee };
+/**
+ * Validates a route :id parameter.
+ * Accepts only integers > 0.
+ *
+ * @param {unknown} raw - The raw string value from req.params.id
+ * @throws {AppError(400)} if not a positive integer
+ */
+const validateId = (raw) => {
+  const id = Number(raw);
+  assert(Number.isInteger(id) && id > 0, 'id must be a positive integer');
+};
+
+module.exports = { validateCreateEmployee, validateId };
