@@ -1,0 +1,547 @@
+{
+  "info": {
+    "name": "Codefeast Assignment — Employee API",
+    "description": "Full CRUD Employee API with salary calculation and aggregate metrics endpoints.\n\n**Base URL**: `http://localhost:3000`\n\n**Collection variable**: `baseUrl` → set to `http://localhost:3000`\n\nRun requests in the **Employees** folder top-to-bottom to create a record first, then use the auto-captured `employeeId` in subsequent requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "codefeast-employee-api-v1"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "employeeId",
+      "value": "1",
+      "type": "string",
+      "description": "Auto-set by the 'Create Employee' request's Tests script"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Returns server status and current timestamp."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/health" }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"status\": \"ok\",\n  \"timestamp\": \"2026-05-03T06:00:00.000Z\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Employees",
+      "item": [
+        {
+          "name": "Create Employee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('employeeId', json.data.id);",
+                  "  pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "  pm.test('success is true', () => pm.expect(json.success).to.be.true);",
+                  "  pm.test('id is returned', () => pm.expect(json.data.id).to.be.a('number'));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Doe\",\n  \"email\": \"jane.doe@example.com\",\n  \"department\": \"Engineering\",\n  \"salary\": 90000\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/employees",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "employees"]
+            },
+            "description": "Creates a new employee. Auto-saves the returned `id` as the `employeeId` collection variable."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/v1/employees" }
+              },
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"Jane Doe\",\n    \"email\": \"jane.doe@example.com\",\n    \"department\": \"Engineering\",\n    \"salary\": 90000,\n    \"createdAt\": \"2026-05-03T06:00:00.000Z\",\n    \"updatedAt\": \"2026-05-03T06:00:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "400 Missing Field",
+              "originalRequest": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/v1/employees" }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"success\": false,\n  \"message\": \"name is required\"\n}"
+            },
+            {
+              "name": "409 Duplicate Email",
+              "originalRequest": {
+                "method": "POST",
+                "url": { "raw": "{{baseUrl}}/api/v1/employees" }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "body": "{\n  \"success\": false,\n  \"message\": \"email already exists\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "List All Employees",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(json.success).to.be.true);",
+                  "pm.test('data is an array', () => pm.expect(json.data).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/employees",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "employees"]
+            },
+            "description": "Returns all employees ordered by `createdAt` descending (newest first)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/employees" }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": 1,\n      \"name\": \"Jane Doe\",\n      \"email\": \"jane.doe@example.com\",\n      \"department\": \"Engineering\",\n      \"salary\": 90000,\n      \"createdAt\": \"2026-05-03T06:00:00.000Z\",\n      \"updatedAt\": \"2026-05-03T06:00:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Employee by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('correct employee returned', () => {",
+                  "  pm.expect(json.data.id).to.equal(parseInt(pm.collectionVariables.get('employeeId')));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/employees/{{employeeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "employees", "{{employeeId}}"]
+            },
+            "description": "Fetches a single employee by ID."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/employees/1" }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"Jane Doe\",\n    \"email\": \"jane.doe@example.com\",\n    \"department\": \"Engineering\",\n    \"salary\": 90000\n  }\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/employees/9999" }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "body": "{\n  \"success\": false,\n  \"message\": \"Employee not found\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Employee (partial)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('salary updated', () => pm.expect(json.data.salary).to.equal(95000));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"salary\": 95000\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/employees/{{employeeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "employees", "{{employeeId}}"]
+            },
+            "description": "Partial update — only the fields included in the body are changed. Omitted fields are preserved."
+          },
+          "response": [
+            {
+              "name": "200 OK (salary updated)",
+              "originalRequest": {
+                "method": "PUT",
+                "url": { "raw": "{{baseUrl}}/api/v1/employees/1" }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"Jane Doe\",\n    \"email\": \"jane.doe@example.com\",\n    \"department\": \"Engineering\",\n    \"salary\": 95000\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Employee Salary — India (IN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('taxRate is 0.30 for IN', () => pm.expect(d.taxRate).to.equal(0.30));",
+                  "pm.test('netSalary correct', () => pm.expect(d.netSalary).to.equal(d.grossSalary * 0.70));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/employees/{{employeeId}}/salary?country=IN",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "employees", "{{employeeId}}", "salary"],
+              "query": [
+                { "key": "country", "value": "IN", "description": "IN=30% | US=25% | other=10%" }
+              ]
+            },
+            "description": "Returns the net salary breakdown for a given country's flat tax rate.\n\n| country | Tax rate |\n|---|---|\n| IN | 30% |\n| US | 25% |\n| any other | 10% |"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/employees/1/salary?country=IN" }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"employeeId\": 1,\n    \"grossSalary\": 95000,\n    \"country\": \"IN\",\n    \"taxRate\": 0.30,\n    \"taxAmount\": 28500,\n    \"netSalary\": 66500\n  }\n}"
+            },
+            {
+              "name": "400 Missing country",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/employees/1/salary" }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"success\": false,\n  \"message\": \"country query parameter is required\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Employee Salary — US",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/employees/{{employeeId}}/salary?country=US",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "employees", "{{employeeId}}", "salary"],
+              "query": [
+                { "key": "country", "value": "US" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Employee Salary — Other (GB)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/employees/{{employeeId}}/salary?country=GB",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "employees", "{{employeeId}}", "salary"],
+              "query": [
+                { "key": "country", "value": "GB", "description": "Any unknown code → 10% default" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Employee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(json.success).to.be.true);",
+                  "pm.test('message present', () => pm.expect(json.message).to.be.a('string'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/employees/{{employeeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "employees", "{{employeeId}}"]
+            },
+            "description": "Deletes the employee. Returns a confirmation message (no entity body since the record no longer exists)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "DELETE",
+                "url": { "raw": "{{baseUrl}}/api/v1/employees/1" }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Employee deleted successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Metrics",
+      "item": [
+        {
+          "name": "Salary Metrics — India (IN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('taxRate is 0.30', () => pm.expect(d.taxRate).to.equal(0.30));",
+                  "pm.test('has totalEmployees', () => pm.expect(d.totalEmployees).to.be.a('number'));",
+                  "pm.test('has averageGrossSalary', () => pm.expect(d.averageGrossSalary).to.be.a('number'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/metrics/salary?country=IN",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "metrics", "salary"],
+              "query": [
+                { "key": "country", "value": "IN", "description": "ISO 3166-1 alpha-2 code" }
+              ]
+            },
+            "description": "Aggregate salary stats (count, sum, avg, min, max gross + net) across all employees using the given country's tax rate."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/metrics/salary?country=IN" }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"country\": \"IN\",\n    \"taxRate\": 0.30,\n    \"totalEmployees\": 3,\n    \"totalGrossSalary\": 270000,\n    \"totalNetSalary\": 189000,\n    \"averageGrossSalary\": 90000,\n    \"averageNetSalary\": 63000,\n    \"minGrossSalary\": 60000,\n    \"maxGrossSalary\": 120000\n  }\n}"
+            },
+            {
+              "name": "400 Missing country",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/metrics/salary" }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"success\": false,\n  \"message\": \"country query parameter is required\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Salary Metrics — US",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/metrics/salary?country=US",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "metrics", "salary"],
+              "query": [
+                { "key": "country", "value": "US" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Job Metrics — Engineering",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('has title', () => pm.expect(d.title).to.be.a('string'));",
+                  "pm.test('employees is array', () => pm.expect(d.employees).to.be.an('array'));",
+                  "pm.test('all employees match title', () => {",
+                  "  d.employees.forEach(e => {",
+                  "    pm.expect(e.department.toLowerCase()).to.include(d.title.toLowerCase());",
+                  "  });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/metrics/job?title=Engineering",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "metrics", "job"],
+              "query": [
+                { "key": "title", "value": "Engineering", "description": "Partial, case-insensitive match on department" }
+              ]
+            },
+            "description": "Returns employee count and salary aggregates for employees whose `department` contains the given title (case-insensitive partial match)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/metrics/job?title=Engineering" }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"title\": \"Engineering\",\n    \"totalEmployees\": 2,\n    \"averageSalary\": 100000,\n    \"minSalary\": 80000,\n    \"maxSalary\": 120000,\n    \"employees\": [\n      { \"id\": 2, \"name\": \"Alice Dev\", \"department\": \"Engineering\", \"salary\": 120000 },\n      { \"id\": 3, \"name\": \"Bob Dev\",   \"department\": \"Engineering\", \"salary\": 80000 }\n    ]\n  }\n}"
+            },
+            {
+              "name": "400 Missing title",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/metrics/job" }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "body": "{\n  \"success\": false,\n  \"message\": \"title query parameter is required\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Job Metrics — partial match (Eng)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/metrics/job?title=Eng",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "metrics", "job"],
+              "query": [
+                { "key": "title", "value": "Eng", "description": "Partial match — matches 'Engineering'" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Job Metrics — no match (Marketing)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/metrics/job?title=Marketing",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "metrics", "job"],
+              "query": [
+                { "key": "title", "value": "Marketing", "description": "Returns zeros + empty array when no match" }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
