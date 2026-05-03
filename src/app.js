@@ -27,6 +27,7 @@ app.get('/health', (_req, res) => {
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
 app.use('/api/v1/employees', require('./routes/employees'));
+app.use('/api/v1/metrics',   require('./routes/metrics'));
 
 // ─── Error Handlers ───────────────────────────────────────────────────────────
 app.use(notFound);
