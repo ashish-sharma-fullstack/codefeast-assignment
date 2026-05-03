@@ -1,5 +1,7 @@
 'use strict';
 
+const { round2 } = require('../utils/math');
+
 /**
  * Salary service — owns all tax/compensation business rules.
  *
@@ -45,8 +47,8 @@ const calculateSalary = (employee, country) => {
   const normalised  = country.toUpperCase();
   const taxRate     = getTaxRate(normalised);
   const grossSalary = employee.salary;
-  const taxAmount   = Math.round(grossSalary * taxRate * 100) / 100;
-  const netSalary   = Math.round((grossSalary - taxAmount) * 100) / 100;
+  const taxAmount   = round2(grossSalary * taxRate);
+  const netSalary   = round2(grossSalary - taxAmount);
 
   return {
     employeeId:  employee.id,
