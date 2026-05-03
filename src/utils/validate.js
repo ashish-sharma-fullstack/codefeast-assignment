@@ -54,4 +54,15 @@ const validateId = (raw) => {
   assert(Number.isInteger(id) && id > 0, 'id must be a positive integer');
 };
 
-module.exports = { validateCreateEmployee, validateUpdateEmployee, validateId };
+/**
+ * Validates the ?country query parameter.
+ *
+ * @param {unknown} country - raw value from req.query.country
+ * @throws {AppError(400)} when absent or blank
+ */
+const validateCountry = (country) => {
+  assert(!!country && typeof country === 'string' && country.trim().length > 0,
+    'country query parameter is required');
+};
+
+module.exports = { validateCreateEmployee, validateUpdateEmployee, validateId, validateCountry };

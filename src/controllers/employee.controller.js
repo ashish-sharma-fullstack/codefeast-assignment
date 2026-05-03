@@ -38,4 +38,11 @@ const remove = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { create, findAll, findById, update, remove };
+const getSalary = async (req, res, next) => {
+  try {
+    const result = await employeeService.getSalary(req.params.id, req.query.country);
+    res.status(200).json({ success: true, data: result });
+  } catch (err) { next(err); }
+};
+
+module.exports = { create, findAll, findById, update, remove, getSalary };

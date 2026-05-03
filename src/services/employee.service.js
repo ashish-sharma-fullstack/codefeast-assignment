@@ -1,8 +1,9 @@
 'use strict';
 
-const { validateCreateEmployee, validateUpdateEmployee, validateId } = require('../utils/validate');
+const { validateCreateEmployee, validateUpdateEmployee, validateId, validateCountry } = require('../utils/validate');
 const AppError           = require('../utils/AppError');
 const employeeRepository = require('../repositories/employee.repository');
+const { calculateSalary } = require('../utils/taxRules');
 
 const create = async (data) => {
   validateCreateEmployee(data);
@@ -35,4 +36,13 @@ const remove = async (rawId) => {
   await employeeRepository.remove(id);
 };
 
-module.exports = { create, findAll, findById, update, remove };
+const getSalary = async (rawId, country) => {
+  validateId(rawId);
+  validateCountry(country);
+  const id = Number(rawId);
+  const employee = await employeeRepository.findById(id);
+  if (!employee) throw new AppError('Employee not found', 404);
+  return calculateSalary(employee, country);
+};
+
+module.exports = { create, findAll, findById, update, remove, getSalary };
