@@ -2,10 +2,20 @@
 
 const request = require('supertest');
 const app = require('../src/app');
+const prisma = require('../src/utils/prisma');
 
 // ─── POST /api/v1/employees ───────────────────────────────────────────────────
 describe('POST /api/v1/employees', () => {
-  // ── Happy path ──────────────────────────────────────────────────────────────
+  // Wipe table before each test — keeps the unique email constraint from
+  // firing across repeated runs and isolates each case.
+  beforeEach(async () => {
+    await prisma.employee.deleteMany();
+  });
+
+  afterAll(async () => {
+    await prisma.$disconnect();
+  });
+
   describe('valid employee creation', () => {
     it('should return 201 with the created employee object', async () => {
       const payload = {

@@ -26,7 +26,7 @@ app.get('/health', (_req, res) => {
 });
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
-// app.use('/api/v1/users', require('./routes/users'));   // mount feature routes here
+app.use('/api/v1/employees', require('./routes/employees'));
 
 // ─── Error Handlers ───────────────────────────────────────────────────────────
 app.use(notFound);
