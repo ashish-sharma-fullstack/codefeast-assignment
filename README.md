@@ -146,7 +146,8 @@ model Employee {
   id         Int      @id @default(autoincrement())
   name       String
   email      String   @unique
-  department String
+  jobTitle   String
+  country    String
   salary     Float
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -207,13 +208,14 @@ curl http://localhost:3000/health
 |---|---|---|---|
 | `name` | string | ✅ | Non-empty, non-whitespace |
 | `email` | string | ✅ | Non-empty; must be unique |
-| `department` | string | ❌ | Any string |
+| `jobTitle` | string | ✅ | Non-empty, non-whitespace |
+| `country` | string | ✅ | Non-empty (ISO 3166-1 alpha-2 recommended) |
 | `salary` | number | ✅ | Positive number (floats accepted) |
 
 ```bash
 curl -X POST http://localhost:3000/api/v1/employees \
   -H "Content-Type: application/json" \
-  -d '{"name":"Jane Doe","email":"jane@acme.com","department":"Engineering","salary":90000}'
+  -d '{"name":"Jane Doe","email":"jane@acme.com","jobTitle":"Software Engineer","country":"IN","salary":90000}'
 ```
 
 ```json
@@ -223,7 +225,8 @@ curl -X POST http://localhost:3000/api/v1/employees \
     "id": 1,
     "name": "Jane Doe",
     "email": "jane@acme.com",
-    "department": "Engineering",
+    "jobTitle": "Software Engineer",
+    "country": "IN",
     "salary": 90000,
     "createdAt": "2026-05-03T06:00:00.000Z",
     "updatedAt": "2026-05-03T06:00:00.000Z"
@@ -285,6 +288,8 @@ curl -X PUT http://localhost:3000/api/v1/employees/1 \
 |---|---|---|
 | `name` | string | Non-empty, non-whitespace |
 | `email` | string | Non-empty; must be unique |
+| `jobTitle` | string | Non-empty, non-whitespace |
+| `country` | string | Non-empty |
 | `salary` | number | Must be positive |
 
 | Status | Condition |
@@ -322,7 +327,7 @@ Calculates net salary after applying the specified country's flat tax rate.
 
 | Param | Required | Values |
 |---|---|---|
-| `country` | ✅ | ISO 3166-1 alpha-2 code (case-insensitive). `IN` → 30%, `US` → 25%, any other → 10% |
+| `country` | ✅ | ISO 3166-1 alpha-2 code (case-insensitive). `IN` → 10%, `US` → 12%, any other → 0% (net = gross) |
 
 ```bash
 curl "http://localhost:3000/api/v1/employees/1/salary?country=IN"
@@ -335,9 +340,9 @@ curl "http://localhost:3000/api/v1/employees/1/salary?country=IN"
     "employeeId": 1,
     "grossSalary": 90000,
     "country": "IN",
-    "taxRate": 0.30,
-    "taxAmount": 27000,
-    "netSalary": 63000
+    "taxRate": 0.10,
+    "taxAmount": 9000,
+    "netSalary": 81000
   }
 }
 ```
@@ -354,7 +359,7 @@ curl "http://localhost:3000/api/v1/employees/1/salary?country=IN"
 
 #### `GET /api/v1/metrics/salary?country=IN` — Aggregate salary metrics
 
-Aggregates salary statistics across **all employees** and computes net figures using the given country's tax rate.
+Aggregates salary statistics for **employees whose `country` matches the given value** and computes net figures using that country's flat tax rate.
 
 ```bash
 curl "http://localhost:3000/api/v1/metrics/salary?country=US"
@@ -365,19 +370,19 @@ curl "http://localhost:3000/api/v1/metrics/salary?country=US"
   "success": true,
   "data": {
     "country": "US",
-    "taxRate": 0.25,
-    "totalEmployees": 5,
-    "totalGrossSalary": 400000,
-    "totalNetSalary": 300000,
-    "averageGrossSalary": 80000,
-    "averageNetSalary": 60000,
-    "minGrossSalary": 50000,
-    "maxGrossSalary": 120000
+    "taxRate": 0.12,
+    "totalEmployees": 2,
+    "totalGrossSalary": 200000,
+    "totalNetSalary": 176000,
+    "averageGrossSalary": 100000,
+    "averageNetSalary": 88000,
+    "minGrossSalary": 90000,
+    "maxGrossSalary": 110000
   }
 }
 ```
 
-> All aggregate fields return `0` when there are no employees.
+> All aggregate fields return `0` when no employees exist for the given country.
 
 | Status | Condition |
 |---|---|
@@ -386,26 +391,26 @@ curl "http://localhost:3000/api/v1/metrics/salary?country=US"
 
 ---
 
-#### `GET /api/v1/metrics/job?title=Engineering` — Job / department metrics
+#### `GET /api/v1/metrics/job?title=Engineer` — Job title metrics
 
-Returns employee count and salary aggregates for employees whose `department` field **contains** the given title (case-insensitive, partial match).
+Returns employee count and salary aggregates for employees whose `jobTitle` field **contains** the given title (case-insensitive, partial match).
 
 ```bash
-curl "http://localhost:3000/api/v1/metrics/job?title=Eng"
+curl "http://localhost:3000/api/v1/metrics/job?title=Engineer"
 ```
 
 ```json
 {
   "success": true,
   "data": {
-    "title": "Eng",
+    "title": "Engineer",
     "totalEmployees": 2,
     "averageSalary": 100000,
     "minSalary": 80000,
     "maxSalary": 120000,
     "employees": [
-      { "id": 1, "name": "Alice Dev", "department": "Engineering", "salary": 120000 },
-      { "id": 2, "name": "Bob Dev",   "department": "Engineering", "salary": 80000  }
+      { "id": 1, "name": "Alice Dev", "jobTitle": "Software Engineer", "salary": 120000 },
+      { "id": 2, "name": "Bob Dev",   "jobTitle": "Software Engineer", "salary": 80000  }
     ]
   }
 }
@@ -432,7 +437,7 @@ npm run test:coverage     # generates coverage report in ./coverage/
 
 | File | Endpoint | Tests |
 |---|---|---|
-| `employees.test.js` | `POST /employees` | 7 |
+| `employees.test.js` | `POST /employees` | 9 |
 | `employees.get.test.js` | `GET /employees`, `GET /employees/:id` | 8 |
 | `employees.put.test.js` | `PUT /employees/:id` | 11 |
 | `employees.delete.test.js` | `DELETE /employees/:id` | 7 |
@@ -440,7 +445,7 @@ npm run test:coverage     # generates coverage report in ./coverage/
 | `employees.edge.test.js` | Duplicate email, ordering, float salary, PUT whitespace | 11 |
 | `metrics.test.js` | `GET /metrics/salary`, `GET /metrics/job` | 14 |
 | `app.test.js` | Health check, 404 handler | 2 |
-| **Total** | | **69** |
+| **Total** | | **71** |
 
 All tests are isolated: `beforeEach` wipes the database; `afterAll` disconnects Prisma.
 
@@ -485,21 +490,23 @@ Database (SQLite)
 
 ## Assumptions
 
-1. **Flat tax rates** — Tax calculation uses simplified flat rates (IN: 30%, US: 25%, all others: 10%). Real tax systems are progressive and vary by year; this is intentionally simplified for the assignment.
+1. **Flat tax rates** — Tax calculation uses simplified flat rates (IN: 10%, US: 12%, all others: 0% — net equals gross). Real tax systems are progressive and vary by year; this is intentionally simplified for the assignment.
 
-2. **`department` is a free-text field** — The schema has no `department` lookup table. The `/metrics/job` endpoint matches by partial string. A production system would likely normalise this into a separate table.
+2. **`jobTitle` is a free-text field** — The schema has no normalised job-title lookup table. The `/metrics/job` endpoint matches by partial, case-insensitive string against `jobTitle`. A production system would likely normalise this into a separate table.
 
-3. **SQLite for all environments** — The database is SQLite backed by `better-sqlite3`. The Prisma adapter layer means switching to PostgreSQL in production requires only a one-line change in `.env` and a one-line change in `src/utils/prisma.js`.
+3. **`country` drives both storage and tax** — Each employee record stores a `country` code. The `/metrics/salary` endpoint filters aggregates to only the employees whose stored `country` matches the query param, then applies that country's tax rate to compute net figures.
 
-4. **Email is the unique identifier** — The schema enforces `email @unique`. Duplicate emails return `409 Conflict` regardless of the endpoint (POST or PUT).
+4. **SQLite for all environments** — The database is SQLite backed by `better-sqlite3`. The Prisma adapter layer means switching to PostgreSQL in production requires only a one-line change in `.env` and a one-line change in `src/utils/prisma.js`.
 
-5. **`PUT` is partial, not `PATCH`** — The endpoint is named `PUT` but behaves like `PATCH` (partial update). Only fields present in the request body are updated; omitted fields retain their current database values. This is a deliberate product decision — it simplifies the client-side contract.
+5. **Email is the unique identifier** — The schema enforces `email @unique`. Duplicate emails return `409 Conflict` regardless of the endpoint (POST or PUT).
 
-6. **Salary is stored as a `Float`** — This allows fractional salaries (e.g., `75000.50`). For financial applications that require exact decimal arithmetic, a `Decimal` type or integer-cents storage would be preferable.
+6. **`PUT` is partial, not `PATCH`** — The endpoint is named `PUT` but behaves like `PATCH` (partial update). Only fields present in the request body are updated; omitted fields retain their current database values. This is a deliberate product decision — it simplifies the client-side contract.
 
-7. **No authentication / authorisation** — The API is open. A production deployment would add JWT-based auth middleware.
+7. **Salary is stored as a `Float`** — This allows fractional salaries (e.g., `75000.50`). For financial applications that require exact decimal arithmetic, a `Decimal` type or integer-cents storage would be preferable.
 
-8. **Test isolation via `deleteMany`** — Each test wipes the entire `Employee` table in `beforeEach`. This is acceptable for SQLite in a test environment; it would be replaced by transactional rollbacks in a production-grade test setup.
+8. **No authentication / authorisation** — The API is open. A production deployment would add JWT-based auth middleware.
+
+9. **Test isolation via `deleteMany`** — Each test wipes the entire `Employee` table in `beforeEach`. This is acceptable for SQLite in a test environment; it would be replaced by transactional rollbacks in a production-grade test setup.
 
 ---
 ## AI Usage Explanation
@@ -525,7 +532,7 @@ This project was developed using **AI-assisted pair programming** (primarily Cha
   AI helped expand test coverage by identifying edge cases such as:
   - Missing or invalid input fields (e.g., negative salary, empty strings)
   - Non-existent employee IDs (404 scenarios)
-  - Country-based salary deduction variations
+  - Country-based salary deduction variations (IN: 10%, US: 12%, others: 0%)
   - Empty dataset handling in salary metrics
 
 - **Refactoring suggestions**  

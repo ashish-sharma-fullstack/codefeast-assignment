@@ -5,6 +5,7 @@ const { round2, nullToZero }             = require('../utils/math');
 const { getTaxRate }                     = require('./salary.service');
 const metricsRepository                  = require('../repositories/metrics.repository');
 
+
 // ─── Salary metrics ───────────────────────────────────────────────────────────
 
 /**
@@ -19,7 +20,7 @@ const getSalaryMetrics = async (country) => {
 
   const normalised = country.toUpperCase();
   const taxRate    = getTaxRate(normalised);
-  const agg        = await metricsRepository.getSalaryAggregates();
+  const agg        = await metricsRepository.getSalaryAggregates(normalised);
 
   const count      = nullToZero(agg._count._all);
   const totalGross = nullToZero(agg._sum.salary);
@@ -57,7 +58,7 @@ const getJobMetrics = async (title) => {
   // Fire both queries in parallel — they are independent
   const [agg, employees] = await Promise.all([
     metricsRepository.getJobAggregates(trimmed),
-    metricsRepository.getEmployeesByDepartment(trimmed),
+    metricsRepository.getEmployeesByJobTitle(trimmed),
   ]);
 
   const count = nullToZero(agg._count._all);

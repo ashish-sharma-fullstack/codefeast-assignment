@@ -9,10 +9,11 @@ const prisma = require('../src/utils/prisma');
 const seed = (overrides = {}) =>
   prisma.employee.create({
     data: {
-      name:       'Tax Test Employee',
-      email:      'tax.test@example.com',
-      department: 'Finance',
-      salary:     100000,               // round number makes tax assertions trivial
+      name:     'Tax Test Employee',
+      email:    'tax.test@example.com',
+      jobTitle: 'Finance Analyst',
+      country:  'IN',
+      salary:   100000,               // round number makes tax assertions trivial
       ...overrides,
     },
   });
@@ -30,9 +31,9 @@ afterAll(async () => {
 // ─── GET /api/v1/employees/:id/salary ─────────────────────────────────────────
 //
 // Tax rules the implementation must apply:
-//   India (IN)  → 30 % flat tax
-//   US    (US)  → 25 % flat tax
-//   Other       → 10 % flat tax
+//   India (IN)  → 10 % flat tax
+//   US    (US)  → 12 % flat tax
+//   Other       →  0 % (no deduction, net = gross)
 //
 describe('GET /api/v1/employees/:id/salary', () => {
 
@@ -60,7 +61,7 @@ describe('GET /api/v1/employees/:id/salary', () => {
 
   // ── India ───────────────────────────────────────────────────────────────────
   describe('India (country=IN)', () => {
-    it('should apply 30% tax and return correct net salary', async () => {
+    it('should apply 10% tax and return correct net salary', async () => {
       const employee = await seed({ salary: 100000 });
 
       const res = await request(app)
@@ -73,9 +74,9 @@ describe('GET /api/v1/employees/:id/salary', () => {
         employeeId:  employee.id,
         grossSalary: 100000,
         country:     'IN',
-        taxRate:     0.30,
-        taxAmount:   30000,
-        netSalary:   70000,
+        taxRate:     0.10,
+        taxAmount:   10000,
+        netSalary:   90000,
       });
     });
 
@@ -87,13 +88,13 @@ describe('GET /api/v1/employees/:id/salary', () => {
         .set('Accept', 'application/json');
 
       expect(res.statusCode).toBe(200);
-      expect(res.body.data.taxRate).toBe(0.30);
+      expect(res.body.data.taxRate).toBe(0.10);
     });
   });
 
   // ── United States ───────────────────────────────────────────────────────────
   describe('United States (country=US)', () => {
-    it('should apply 25% tax and return correct net salary', async () => {
+    it('should apply 12% tax and return correct net salary', async () => {
       const employee = await seed({ salary: 100000 });
 
       const res = await request(app)
@@ -106,16 +107,16 @@ describe('GET /api/v1/employees/:id/salary', () => {
         employeeId:  employee.id,
         grossSalary: 100000,
         country:     'US',
-        taxRate:     0.25,
-        taxAmount:   25000,
-        netSalary:   75000,
+        taxRate:     0.12,
+        taxAmount:   12000,
+        netSalary:   88000,
       });
     });
   });
 
   // ── Other countries ─────────────────────────────────────────────────────────
-  describe('other countries (default 10% tax)', () => {
-    it('should apply 10% tax for GB', async () => {
+  describe('other countries (default 0% tax)', () => {
+    it('should apply 0% tax for GB (net = gross)', async () => {
       const employee = await seed({ salary: 100000 });
 
       const res = await request(app)
@@ -125,13 +126,13 @@ describe('GET /api/v1/employees/:id/salary', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.data).toMatchObject({
         country:   'GB',
-        taxRate:   0.10,
-        taxAmount: 10000,
-        netSalary: 90000,
+        taxRate:   0.00,
+        taxAmount: 0,
+        netSalary: 100000,
       });
     });
 
-    it('should apply 10% tax for DE', async () => {
+    it('should apply 0% tax for DE (net = gross)', async () => {
       const employee = await seed({ salary: 200000 });
 
       const res = await request(app)
@@ -141,9 +142,9 @@ describe('GET /api/v1/employees/:id/salary', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.data).toMatchObject({
         country:   'DE',
-        taxRate:   0.10,
-        taxAmount: 20000,
-        netSalary: 180000,
+        taxRate:   0.00,
+        taxAmount: 0,
+        netSalary: 200000,
       });
     });
   });

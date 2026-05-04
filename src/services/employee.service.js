@@ -28,8 +28,8 @@ const _findOrThrow = async (rawId) => {
 const create = async (data) => {
   validateCreateEmployee(data);
   // Destructure only schema fields — Prisma rejects unknown columns
-  const { name, email, department, salary } = data;
-  return employeeRepository.create({ name, email, department, salary });
+  const { name, email, jobTitle, country, salary } = data;
+  return employeeRepository.create({ name, email, jobTitle, country, salary });
 };
 
 const findAll = () => employeeRepository.findAll();

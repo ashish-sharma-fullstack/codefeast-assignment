@@ -7,10 +7,11 @@ const prisma = require('../src/utils/prisma');
 // ─── Seed helper ──────────────────────────────────────────────────────────────
 
 const BASE = {
-  name:       'Edge Test',
-  email:      'edge@example.com',
-  department: 'QA',
-  salary:     60000,
+  name:     'Edge Test',
+  email:    'edge@example.com',
+  jobTitle: 'QA Engineer',
+  country:  'IN',
+  salary:   60000,
 };
 
 const seed = (overrides = {}) =>
@@ -166,33 +167,35 @@ describe('PUT /api/v1/employees/:id — edge cases', () => {
 // ─── Metrics edge cases ───────────────────────────────────────────────────────
 describe('GET /api/v1/metrics — single-employee edge cases', () => {
 
+  // Salary metrics now filter by country — seed with country='IN'
   describe('salary metrics with exactly one employee', () => {
     it('min, max and average gross salary should all equal the single employee salary', async () => {
-      await seed({ salary: 80000 });
+      await seed({ salary: 80000, country: 'IN' });
 
       const res = await request(app)
         .get('/api/v1/metrics/salary?country=IN')
         .set('Accept', 'application/json');
 
       expect(res.statusCode).toBe(200);
+      // IN tax = 10%: net = 80000 * 0.90 = 72000
       expect(res.body.data).toMatchObject({
         totalEmployees:     1,
         minGrossSalary:     80000,
         maxGrossSalary:     80000,
         averageGrossSalary: 80000,
         totalGrossSalary:   80000,
-        totalNetSalary:     56000,   // 80000 * 0.70 (30% IN tax)
-        averageNetSalary:   56000,
+        totalNetSalary:     72000,
+        averageNetSalary:   72000,
       });
     });
   });
 
   describe('job metrics with exactly one employee', () => {
     it('min, max and average salary should all equal the single employee salary', async () => {
-      await seed({ department: 'Engineering', salary: 90000 });
+      await seed({ jobTitle: 'Software Engineer', salary: 90000 });
 
       const res = await request(app)
-        .get('/api/v1/metrics/job?title=Engineering')
+        .get('/api/v1/metrics/job?title=Software Engineer')
         .set('Accept', 'application/json');
 
       expect(res.statusCode).toBe(200);

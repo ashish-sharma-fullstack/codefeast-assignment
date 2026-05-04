@@ -143,3 +143,8 @@ vite.config.ts.timestamp-*
 .vite/
 
 /generated/prisma
+
+# SQLite databases
+dev.db
+*.db
+prisma/*.db

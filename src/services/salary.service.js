@@ -16,12 +16,12 @@ const { round2 } = require('../utils/math');
  * Add or override rates here without touching any other file.
  */
 const TAX_RATES = {
-  IN: 0.30,   // India
-  US: 0.25,   // United States
+  IN: 0.10,   // India
+  US: 0.12,   // United States
 };
 
 /** Applied to any country not explicitly listed in TAX_RATES */
-const DEFAULT_TAX_RATE = 0.10;
+const DEFAULT_TAX_RATE = 0.00;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

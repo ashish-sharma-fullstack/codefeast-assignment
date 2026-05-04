@@ -9,12 +9,14 @@ const prisma = require('../src/utils/prisma');
 const seedMany = (employees) =>
   Promise.all(employees.map((data) => prisma.employee.create({ data })));
 
+// Employees seeded with country so salary metrics can be filtered by country.
+// Job metrics filter on jobTitle.
 const EMPLOYEES = [
-  { name: 'Alice Dev',    email: 'alice@example.com',   department: 'Engineering',     salary: 120000 },
-  { name: 'Bob Dev',      email: 'bob@example.com',     department: 'Engineering',     salary: 80000  },
-  { name: 'Carol HR',     email: 'carol@example.com',   department: 'HR',              salary: 60000  },
-  { name: 'Dave Finance', email: 'dave@example.com',    department: 'Finance',         salary: 90000  },
-  { name: 'Eve Ops',      email: 'eve@example.com',     department: 'Operations',      salary: 50000  },
+  { name: 'Alice Dev',    email: 'alice@example.com',   jobTitle: 'Software Engineer', country: 'IN', salary: 120000 },
+  { name: 'Bob Dev',      email: 'bob@example.com',     jobTitle: 'Software Engineer', country: 'IN', salary: 80000  },
+  { name: 'Carol HR',     email: 'carol@example.com',   jobTitle: 'HR Manager',        country: 'US', salary: 60000  },
+  { name: 'Dave Finance', email: 'dave@example.com',    jobTitle: 'Finance Analyst',   country: 'US', salary: 90000  },
+  { name: 'Eve Ops',      email: 'eve@example.com',     jobTitle: 'Operations Lead',   country: 'GB', salary: 50000  },
 ];
 
 // ─── Shared lifecycle ─────────────────────────────────────────────────────────
@@ -29,8 +31,8 @@ afterAll(async () => {
 
 // ─── GET /api/v1/metrics/salary ───────────────────────────────────────────────
 //
-// Returns aggregate salary stats for ALL employees,
-// with net-salary figures computed via the given country's tax rate.
+// Returns aggregate salary stats for employees whose country matches the
+// query param, with net-salary figures computed via the given country's tax rate.
 //
 describe('GET /api/v1/metrics/salary', () => {
 
@@ -59,17 +61,19 @@ describe('GET /api/v1/metrics/salary', () => {
     });
   });
 
-  // ── India (IN, 30% tax) ─────────────────────────────────────────────────────
-  describe('country=IN (30% tax)', () => {
+  // ── India (IN, 10% tax) ─────────────────────────────────────────────────────
+  describe('country=IN (10% tax)', () => {
     it('should compute correct aggregate figures for India', async () => {
-      // Only seed two employees for deterministic math
+      // Only seed two IN employees for deterministic math
       await seedMany([
-        { name: 'A', email: 'a@x.com', department: 'Eng', salary: 100000 },
-        { name: 'B', email: 'b@x.com', department: 'Eng', salary: 50000  },
+        { name: 'A', email: 'a@x.com', jobTitle: 'Dev', country: 'IN', salary: 100000 },
+        { name: 'B', email: 'b@x.com', jobTitle: 'Dev', country: 'IN', salary: 50000  },
+        // This US employee must NOT appear in IN results
+        { name: 'C', email: 'c@x.com', jobTitle: 'Dev', country: 'US', salary: 999999 },
       ]);
 
-      // totalGross = 150000 | taxRate = 0.30 | totalNet = 105000
-      // avgGross   = 75000  | avgNet  = 52500
+      // totalGross = 150000 | taxRate = 0.10 | totalNet = 135000
+      // avgGross   = 75000  | avgNet  = 67500
       // min = 50000 | max = 100000
 
       const res = await request(app)
@@ -78,28 +82,30 @@ describe('GET /api/v1/metrics/salary', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.body.data).toMatchObject({
-        country:           'IN',
-        taxRate:           0.30,
-        totalEmployees:    2,
-        totalGrossSalary:  150000,
-        totalNetSalary:    105000,
+        country:            'IN',
+        taxRate:            0.10,
+        totalEmployees:     2,
+        totalGrossSalary:   150000,
+        totalNetSalary:     135000,
         averageGrossSalary: 75000,
-        averageNetSalary:  52500,
-        minGrossSalary:    50000,
-        maxGrossSalary:    100000,
+        averageNetSalary:   67500,
+        minGrossSalary:     50000,
+        maxGrossSalary:     100000,
       });
     });
   });
 
-  // ── US (25% tax) ────────────────────────────────────────────────────────────
-  describe('country=US (25% tax)', () => {
+  // ── US (12% tax) ────────────────────────────────────────────────────────────
+  describe('country=US (12% tax)', () => {
     it('should compute correct aggregate figures for US', async () => {
       await seedMany([
-        { name: 'A', email: 'a@x.com', department: 'Eng', salary: 100000 },
-        { name: 'B', email: 'b@x.com', department: 'Eng', salary: 100000 },
+        { name: 'A', email: 'a@x.com', jobTitle: 'Dev', country: 'US', salary: 100000 },
+        { name: 'B', email: 'b@x.com', jobTitle: 'Dev', country: 'US', salary: 100000 },
+        // IN employee must NOT appear in US results
+        { name: 'C', email: 'c@x.com', jobTitle: 'Dev', country: 'IN', salary: 999999 },
       ]);
 
-      // taxRate = 0.25 | netPerEmployee = 75000 | totalNet = 150000
+      // taxRate = 0.12 | netPerEmployee = 88000 | totalNet = 176000
 
       const res = await request(app)
         .get('/api/v1/metrics/salary?country=US')
@@ -108,17 +114,22 @@ describe('GET /api/v1/metrics/salary', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.data).toMatchObject({
         country:          'US',
-        taxRate:          0.25,
+        taxRate:          0.12,
         totalEmployees:   2,
         totalGrossSalary: 200000,
-        totalNetSalary:   150000,
+        totalNetSalary:   176000,
       });
     });
   });
 
-  // ── No employees ────────────────────────────────────────────────────────────
-  describe('when no employees exist', () => {
+  // ── No employees for that country ────────────────────────────────────────────
+  describe('when no employees exist for the given country', () => {
     it('should return zeros for all aggregate fields', async () => {
+      // Seed employees for a different country
+      await seedMany([
+        { name: 'A', email: 'a@x.com', jobTitle: 'Dev', country: 'US', salary: 100000 },
+      ]);
+
       const res = await request(app)
         .get('/api/v1/metrics/salary?country=IN')
         .set('Accept', 'application/json');
@@ -163,7 +174,7 @@ describe('GET /api/v1/metrics/salary', () => {
 // ─── GET /api/v1/metrics/job ──────────────────────────────────────────────────
 //
 // Returns employee count + salary stats for all employees whose
-// `department` field contains the given title (case-insensitive partial match).
+// `jobTitle` field contains the given title (case-insensitive partial match).
 //
 describe('GET /api/v1/metrics/job', () => {
 
@@ -173,7 +184,7 @@ describe('GET /api/v1/metrics/job', () => {
       await seedMany(EMPLOYEES);
 
       const res = await request(app)
-        .get('/api/v1/metrics/job?title=Engineering')
+        .get('/api/v1/metrics/job?title=Software Engineer')
         .set('Accept', 'application/json');
 
       expect(res.statusCode).toBe(200);
@@ -192,18 +203,18 @@ describe('GET /api/v1/metrics/job', () => {
 
   // ── Matching employees ──────────────────────────────────────────────────────
   describe('when matching employees exist', () => {
-    it('should return only employees whose department contains the title', async () => {
+    it('should return only employees whose jobTitle contains the title', async () => {
       await seedMany(EMPLOYEES);
 
       const res = await request(app)
-        .get('/api/v1/metrics/job?title=Engineering')
+        .get('/api/v1/metrics/job?title=Software Engineer')
         .set('Accept', 'application/json');
 
       expect(res.statusCode).toBe(200);
-      // Alice + Bob are in Engineering
+      // Alice + Bob are Software Engineers
       expect(res.body.data.totalEmployees).toBe(2);
       expect(res.body.data.employees.every(
-        (e) => e.department.toLowerCase().includes('engineering')
+        (e) => e.jobTitle.toLowerCase().includes('software engineer')
       )).toBe(true);
     });
 
@@ -211,7 +222,7 @@ describe('GET /api/v1/metrics/job', () => {
       await seedMany(EMPLOYEES); // Alice=120k, Bob=80k → avg=100k, min=80k, max=120k
 
       const res = await request(app)
-        .get('/api/v1/metrics/job?title=Engineering')
+        .get('/api/v1/metrics/job?title=Software Engineer')
         .set('Accept', 'application/json');
 
       expect(res.statusCode).toBe(200);
@@ -223,26 +234,26 @@ describe('GET /api/v1/metrics/job', () => {
       });
     });
 
-    it('should match case-insensitively (title=engineering)', async () => {
+    it('should match case-insensitively (title=software engineer)', async () => {
       await seedMany(EMPLOYEES);
 
       const res = await request(app)
-        .get('/api/v1/metrics/job?title=engineering')
+        .get('/api/v1/metrics/job?title=software engineer')
         .set('Accept', 'application/json');
 
       expect(res.statusCode).toBe(200);
       expect(res.body.data.totalEmployees).toBe(2);
     });
 
-    it('should support partial title matches (title=Eng)', async () => {
+    it('should support partial title matches (title=Software)', async () => {
       await seedMany(EMPLOYEES);
 
       const res = await request(app)
-        .get('/api/v1/metrics/job?title=Eng')
+        .get('/api/v1/metrics/job?title=Software')
         .set('Accept', 'application/json');
 
       expect(res.statusCode).toBe(200);
-      // "Engineering" contains "Eng"
+      // "Software Engineer" contains "Software"
       expect(res.body.data.totalEmployees).toBe(2);
     });
   });

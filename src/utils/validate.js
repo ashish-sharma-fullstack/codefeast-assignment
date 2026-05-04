@@ -17,14 +17,16 @@ const assert = (condition, message) => {
 /**
  * Validates the payload for creating an employee.
  *
- * @param {{ name, email, salary }} payload
+ * @param {{ name, email, jobTitle, country, salary }} payload
  * @throws {AppError} on the first failing rule
  */
-const validateCreateEmployee = ({ name, email, salary }) => {
-  assert(typeof name  === 'string' && !!name.trim(),    'name is required');
-  assert(typeof email === 'string' && !!email.trim(),   'email is required');
-  assert(salary !== undefined && salary !== null,       'salary is required');
-  assert(typeof salary === 'number' && salary > 0,      'salary must be a positive number');
+const validateCreateEmployee = ({ name, email, jobTitle, country, salary }) => {
+  assert(typeof name     === 'string' && !!name.trim(),     'name is required');
+  assert(typeof email    === 'string' && !!email.trim(),    'email is required');
+  assert(typeof jobTitle === 'string' && !!jobTitle.trim(), 'jobTitle is required');
+  assert(typeof country  === 'string' && !!country.trim(),  'country is required');
+  assert(salary !== undefined && salary !== null,            'salary is required');
+  assert(typeof salary === 'number' && salary > 0,           'salary must be a positive number');
 };
 
 /**
@@ -32,14 +34,16 @@ const validateCreateEmployee = ({ name, email, salary }) => {
  * Only fields that are present in the payload are checked —
  * omitted fields are left unchanged in the DB.
  *
- * @param {Partial<{ name, email, salary }>} data
+ * @param {Partial<{ name, email, jobTitle, country, salary }>} data
  * @throws {AppError} on the first failing rule
  */
 const validateUpdateEmployee = (data) => {
-  if ('name'   in data) assert(typeof data.name  === 'string' && !!data.name.trim(),  'name cannot be empty');
-  if ('email'  in data) assert(typeof data.email === 'string' && !!data.email.trim(), 'email cannot be empty');
-  if ('salary' in data) assert(typeof data.salary === 'number' && data.salary > 0,
-                                                                            'salary must be a positive number');
+  if ('name'     in data) assert(typeof data.name     === 'string' && !!data.name.trim(),     'name cannot be empty');
+  if ('email'    in data) assert(typeof data.email    === 'string' && !!data.email.trim(),    'email cannot be empty');
+  if ('jobTitle' in data) assert(typeof data.jobTitle === 'string' && !!data.jobTitle.trim(), 'jobTitle cannot be empty');
+  if ('country'  in data) assert(typeof data.country  === 'string' && !!data.country.trim(),  'country cannot be empty');
+  if ('salary'   in data) assert(typeof data.salary === 'number' && data.salary > 0,
+                                                                             'salary must be a positive number');
 };
 
 /**

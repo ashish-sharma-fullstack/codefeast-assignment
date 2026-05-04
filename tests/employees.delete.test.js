@@ -9,10 +9,11 @@ const prisma = require('../src/utils/prisma');
 const seed = (overrides = {}) =>
   prisma.employee.create({
     data: {
-      name:       'Delete Me',
-      email:      'delete.me@example.com',
-      department: 'Ops',
-      salary:     45000,
+      name:     'Delete Me',
+      email:    'delete.me@example.com',
+      jobTitle: 'Operations Manager',
+      country:  'IN',
+      salary:   45000,
       ...overrides,
     },
   });

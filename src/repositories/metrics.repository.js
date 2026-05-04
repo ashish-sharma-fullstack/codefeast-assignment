@@ -5,11 +5,14 @@ const prisma = require('../utils/prisma');
 // ─── Salary metrics ───────────────────────────────────────────────────────────
 
 /**
- * Single-query aggregate over ALL employees.
+ * Single-query aggregate over employees in the given country.
  * Prisma computes _count, _sum, _avg, _min, _max at the DB level.
+ *
+ * @param {string} country - normalised (uppercase) ISO country code
  */
-const getSalaryAggregates = () =>
+const getSalaryAggregates = (country) =>
   prisma.employee.aggregate({
+    where:  { country },
     _count: { _all: true },
     _sum:   { salary: true },
     _avg:   { salary: true },
@@ -20,14 +23,14 @@ const getSalaryAggregates = () =>
 // ─── Job metrics ──────────────────────────────────────────────────────────────
 
 /**
- * DB-level aggregate filtered by department.
+ * DB-level aggregate filtered by jobTitle.
  * SQLite's LIKE (used by Prisma `contains`) is case-insensitive for ASCII.
  *
- * @param {string} title - partial department name
+ * @param {string} title - partial job title
  */
 const getJobAggregates = (title) =>
   prisma.employee.aggregate({
-    where:  { department: { contains: title } },
+    where:  { jobTitle: { contains: title } },
     _count: { _all: true },
     _sum:   { salary: true },
     _avg:   { salary: true },
@@ -39,13 +42,13 @@ const getJobAggregates = (title) =>
  * Returns matching employees with only the fields needed by the API.
  * DB-level `contains` replaces the previous full-table-scan + JS filter.
  *
- * @param {string} title - partial department name
+ * @param {string} title - partial job title
  */
-const getEmployeesByDepartment = (title) =>
+const getEmployeesByJobTitle = (title) =>
   prisma.employee.findMany({
-    where:   { department: { contains: title } },
-    select:  { id: true, name: true, department: true, salary: true },
+    where:   { jobTitle: { contains: title } },
+    select:  { id: true, name: true, jobTitle: true, salary: true },
     orderBy: { name: 'asc' },
   });
 
-module.exports = { getSalaryAggregates, getJobAggregates, getEmployeesByDepartment };
+module.exports = { getSalaryAggregates, getJobAggregates, getEmployeesByJobTitle };

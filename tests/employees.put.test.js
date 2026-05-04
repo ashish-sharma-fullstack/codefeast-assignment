@@ -9,10 +9,11 @@ const prisma = require('../src/utils/prisma');
 const seed = (overrides = {}) =>
   prisma.employee.create({
     data: {
-      name:       'Original Name',
-      email:      'original@example.com',
-      department: 'Engineering',
-      salary:     60000,
+      name:     'Original Name',
+      email:    'original@example.com',
+      jobTitle: 'Software Engineer',
+      country:  'IN',
+      salary:   60000,
       ...overrides,
     },
   });
@@ -36,10 +37,11 @@ describe('PUT /api/v1/employees/:id', () => {
       const existing = await seed();
 
       const payload = {
-        name:       'Updated Name',
-        email:      'updated@example.com',
-        department: 'Product',
-        salary:     95000,
+        name:     'Updated Name',
+        email:    'updated@example.com',
+        jobTitle: 'Product Manager',
+        country:  'US',
+        salary:   95000,
       };
 
       const res = await request(app)
@@ -50,11 +52,12 @@ describe('PUT /api/v1/employees/:id', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data).toMatchObject({
-        id:         existing.id,
-        name:       payload.name,
-        email:      payload.email,
-        department: payload.department,
-        salary:     payload.salary,
+        id:       existing.id,
+        name:     payload.name,
+        email:    payload.email,
+        jobTitle: payload.jobTitle,
+        country:  payload.country,
+        salary:   payload.salary,
       });
       expect(res.body.data.updatedAt).toBeDefined();
     });

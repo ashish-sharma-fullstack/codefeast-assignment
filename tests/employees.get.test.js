@@ -7,9 +7,9 @@ const prisma  = require('../src/utils/prisma');
 // ─── Seed helpers ─────────────────────────────────────────────────────────────
 
 const FIXTURES = [
-  { name: 'Alice Walker',  email: 'alice@example.com',  department: 'Engineering', salary: 90000 },
-  { name: 'Bob Martin',   email: 'bob@example.com',    department: 'Design',       salary: 70000 },
-  { name: 'Carol Strong', email: 'carol@example.com',  department: 'HR',           salary: 55000 },
+  { name: 'Alice Walker',  email: 'alice@example.com',  jobTitle: 'Software Engineer', country: 'IN', salary: 90000 },
+  { name: 'Bob Martin',    email: 'bob@example.com',    jobTitle: 'UI Designer',        country: 'US', salary: 70000 },
+  { name: 'Carol Strong',  email: 'carol@example.com',  jobTitle: 'HR Manager',         country: 'GB', salary: 55000 },
 ];
 
 const seedEmployees = () =>
@@ -66,6 +66,8 @@ describe('GET /api/v1/employees', () => {
         expect(employee).toHaveProperty('id');
         expect(employee).toHaveProperty('name');
         expect(employee).toHaveProperty('email');
+        expect(employee).toHaveProperty('jobTitle');
+        expect(employee).toHaveProperty('country');
         expect(employee).toHaveProperty('salary');
         expect(employee).toHaveProperty('createdAt');
       });
@@ -86,11 +88,12 @@ describe('GET /api/v1/employees/:id', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data).toMatchObject({
-        id:         created.id,
-        name:       created.name,
-        email:      created.email,
-        department: created.department,
-        salary:     created.salary,
+        id:       created.id,
+        name:     created.name,
+        email:    created.email,
+        jobTitle: created.jobTitle,
+        country:  created.country,
+        salary:   created.salary,
       });
       expect(res.body.data.createdAt).toBeDefined();
     });
